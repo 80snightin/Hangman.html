@@ -6,46 +6,85 @@
 <title>1980s Night Hangman</title>
 <style>
     body {
-        background-color: black;
-        color: #0ff;
+        margin: 0;
         font-family: 'Courier New', monospace;
+        background: radial-gradient(circle at center, #000 0%, #111 100%);
+        color: #0ff;
         text-align: center;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
         padding: 20px;
     }
     h1 {
+        font-size: 2.5rem;
         color: magenta;
-        text-shadow: 0 0 5px cyan, 0 0 10px magenta;
+        text-shadow: 0 0 10px cyan, 0 0 20px magenta;
+        margin-top: 10px;
     }
     #wordDisplay {
         font-size: 2rem;
-        letter-spacing: 0.3em;
+        letter-spacing: 0.4em;
+        margin: 20px 0;
+        text-shadow: 0 0 10px #0ff;
     }
     #lives {
-        color: yellow;
         font-size: 1.2rem;
+        margin: 10px 0;
+        color: yellow;
+        text-shadow: 0 0 5px orange;
     }
     #guessed {
         font-size: 1rem;
-        margin-top: 10px;
-    }
-    button {
-        background: magenta;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        font-size: 1rem;
-        cursor: pointer;
-        margin-top: 10px;
-        border-radius: 4px;
-        text-shadow: 0 0 5px black;
-    }
-    button:hover {
-        background: #ff00ffcc;
+        margin: 5px 0;
+        color: #ff0;
     }
     #message {
         font-size: 1.4rem;
         margin: 15px 0;
-        text-shadow: 0 0 5px yellow;
+        text-shadow: 0 0 5px #ff0;
+    }
+    .keyboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+        gap: 5px;
+        max-width: 400px;
+        margin-top: 10px;
+    }
+    .key {
+        background: magenta;
+        border: none;
+        padding: 8px;
+        font-size: 1rem;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+        text-shadow: 0 0 3px black;
+    }
+    .key:disabled {
+        background: #333;
+        color: #777;
+        cursor: default;
+    }
+    button#newGame {
+        margin-top: 20px;
+        background: cyan;
+        color: black;
+        font-weight: bold;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        text-shadow: 0 0 3px white;
+    }
+    button#newGame:hover {
+        background: #00ffffcc;
+    }
+    @keyframes neon {
+        0%, 100% { text-shadow: 0 0 5px magenta, 0 0 15px cyan; }
+        50% { text-shadow: 0 0 20px yellow, 0 0 30px magenta; }
     }
 </style>
 </head>
@@ -56,11 +95,12 @@
 <div id="lives"></div>
 <div id="guessed"></div>
 <div id="message"></div>
-<input type="text" id="guessInput" maxlength="1" placeholder="Type letter" autofocus>
-<button onclick="guessLetter()">Guess</button>
-<button onclick="newGame()">New Game</button>
+
+<div class="keyboard" id="keyboard"></div>
+<button id="newGame" onclick="newGame()">New Game</button>
 
 <script>
+// === Word List ===
 const wordsMaster = [
     "arcade","vhs","mixtape","cassette","pacman","boombox","atari","thriller",
     "neon","rubik","roller","skates","ghost","busters","delorean","knight",
@@ -75,6 +115,7 @@ let revealed = [];
 let guessedLetters = [];
 let lives = 7;
 
+// Shuffle & no-repeat logic
 function shuffleDeck() {
     deck = [...wordsMaster];
     for (let i = deck.length - 1; i > 0; i--) {
@@ -89,26 +130,23 @@ function newGame() {
     revealed = Array(currentWord.length).fill(false);
     guessedLetters = [];
     lives = 7;
-    updateDisplay();
     document.getElementById("message").textContent = "";
+    buildKeyboard();
+    updateDisplay();
 }
 
 function updateDisplay() {
     const displayWord = currentWord.split("").map((ch, i) => revealed[i] ? ch.toUpperCase() : "_").join(" ");
     document.getElementById("wordDisplay").textContent = displayWord;
-    document.getElementById("lives").textContent = `Lives: ${lives}`;
+    document.getElementById("lives").textContent = `Lives: ${lives} ❤️`.repeat(1);
     document.getElementById("guessed").textContent = guessedLetters.length ? `Guessed: ${guessedLetters.join(", ").toUpperCase()}` : "";
 }
 
-function guessLetter() {
-    const input = document.getElementById("guessInput");
-    const letter = input.value.toLowerCase();
-    input.value = "";
-
-    if (!letter.match(/[a-z]/) || letter.length !== 1) return;
+function guessLetter(letter) {
     if (guessedLetters.includes(letter) || revealed.includes(letter)) return;
 
     guessedLetters.push(letter);
+    document.getElementById(`key-${letter}`).disabled = true;
 
     if (currentWord.includes(letter)) {
         currentWord.split("").forEach((ch, i) => {
@@ -125,12 +163,34 @@ function guessLetter() {
 function checkGameOver() {
     if (revealed.every(v => v)) {
         document.getElementById("message").textContent = "🎉 Totally Tubular! You Won! 🎉";
+        disableKeyboard();
     } else if (lives <= 0) {
         document.getElementById("message").textContent = `💀 Bogus! The word was: ${currentWord.toUpperCase()} 💀`;
         revealed = Array(currentWord.length).fill(true);
+        disableKeyboard();
     }
 }
 
+function buildKeyboard() {
+    const keyboardDiv = document.getElementById("keyboard");
+    keyboardDiv.innerHTML = "";
+    const alphabet = "abcdefghijklmnopqrstuvwxyz".split("");
+    alphabet.forEach(letter => {
+        const btn = document.createElement("button");
+        btn.textContent = letter.toUpperCase();
+        btn.className = "key";
+        btn.id = `key-${letter}`;
+        btn.onclick = () => guessLetter(letter);
+        keyboardDiv.appendChild(btn);
+    });
+}
+
+function disableKeyboard() {
+    const keys = document.querySelectorAll(".key");
+    keys.forEach(k => k.disabled = true);
+}
+
+// Init game
 shuffleDeck();
 newGame();
 </script>
