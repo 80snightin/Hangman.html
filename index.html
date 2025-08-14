@@ -1,42 +1,138 @@
-eighties_words = [
-    "arcade",
-    "vhs",
-    "mixtape",
-    "cassette",
-    "pacman",
-    "boombox",
-    "atari",
-    "thriller",
-    "neon",
-    "rubik",
-    "roller",
-    "skates",
-    "ghost",
-    "busters",
-    "delorean",
-    "knight",
-    "miami",
-    "vice",
-    "mullet",
-    "synth",
-    "pop",
-    "madonna",
-    "mtv",
-    "tron",
-    "et",
-    "gremlins",
-    "topgun",
-    "walkman",
-    "retro",
-    "legwarmers",
-    "tetris",
-    "joystick",
-    "spandex",
-    "pinball",
-    "vcr",
-    "cabbage",
-    "patch",
-    "spray",
-    "paint",
-    "shoulder"
-]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1980s Night Hangman</title>
+<style>
+    body {
+        background-color: black;
+        color: #0ff;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 {
+        color: magenta;
+        text-shadow: 0 0 5px cyan, 0 0 10px magenta;
+    }
+    #wordDisplay {
+        font-size: 2rem;
+        letter-spacing: 0.3em;
+    }
+    #lives {
+        color: yellow;
+        font-size: 1.2rem;
+    }
+    #guessed {
+        font-size: 1rem;
+        margin-top: 10px;
+    }
+    button {
+        background: magenta;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin-top: 10px;
+        border-radius: 4px;
+        text-shadow: 0 0 5px black;
+    }
+    button:hover {
+        background: #ff00ffcc;
+    }
+    #message {
+        font-size: 1.4rem;
+        margin: 15px 0;
+        text-shadow: 0 0 5px yellow;
+    }
+</style>
+</head>
+<body>
+
+<h1>🎵 1980s Night Hangman 🎵</h1>
+<div id="wordDisplay"></div>
+<div id="lives"></div>
+<div id="guessed"></div>
+<div id="message"></div>
+<input type="text" id="guessInput" maxlength="1" placeholder="Type letter" autofocus>
+<button onclick="guessLetter()">Guess</button>
+<button onclick="newGame()">New Game</button>
+
+<script>
+const wordsMaster = [
+    "arcade","vhs","mixtape","cassette","pacman","boombox","atari","thriller",
+    "neon","rubik","roller","skates","ghost","busters","delorean","knight",
+    "miami","vice","mullet","synth","pop","madonna","mtv","tron","et","gremlins",
+    "topgun","walkman","retro","legwarmers","tetris","joystick","spandex",
+    "pinball","vcr","cabbage","patch","spray","paint","shoulder"
+];
+
+let deck = [];
+let currentWord = "";
+let revealed = [];
+let guessedLetters = [];
+let lives = 7;
+
+function shuffleDeck() {
+    deck = [...wordsMaster];
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+}
+
+function newGame() {
+    if (deck.length === 0) shuffleDeck();
+    currentWord = deck.pop().toLowerCase();
+    revealed = Array(currentWord.length).fill(false);
+    guessedLetters = [];
+    lives = 7;
+    updateDisplay();
+    document.getElementById("message").textContent = "";
+}
+
+function updateDisplay() {
+    const displayWord = currentWord.split("").map((ch, i) => revealed[i] ? ch.toUpperCase() : "_").join(" ");
+    document.getElementById("wordDisplay").textContent = displayWord;
+    document.getElementById("lives").textContent = `Lives: ${lives}`;
+    document.getElementById("guessed").textContent = guessedLetters.length ? `Guessed: ${guessedLetters.join(", ").toUpperCase()}` : "";
+}
+
+function guessLetter() {
+    const input = document.getElementById("guessInput");
+    const letter = input.value.toLowerCase();
+    input.value = "";
+
+    if (!letter.match(/[a-z]/) || letter.length !== 1) return;
+    if (guessedLetters.includes(letter) || revealed.includes(letter)) return;
+
+    guessedLetters.push(letter);
+
+    if (currentWord.includes(letter)) {
+        currentWord.split("").forEach((ch, i) => {
+            if (ch === letter) revealed[i] = true;
+        });
+    } else {
+        lives--;
+    }
+
+    checkGameOver();
+    updateDisplay();
+}
+
+function checkGameOver() {
+    if (revealed.every(v => v)) {
+        document.getElementById("message").textContent = "🎉 Totally Tubular! You Won! 🎉";
+    } else if (lives <= 0) {
+        document.getElementById("message").textContent = `💀 Bogus! The word was: ${currentWord.toUpperCase()} 💀`;
+        revealed = Array(currentWord.length).fill(true);
+    }
+}
+
+shuffleDeck();
+newGame();
+</script>
+</body>
+</html>
