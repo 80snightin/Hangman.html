@@ -30,10 +30,12 @@
         margin: 20px 0;
         text-shadow: 0 0 10px #0ff;
     }
-    #lives {
-        font-size: 1.2rem;
-        margin: 10px 0;
-        color: yellow;
+    #hangman {
+        white-space: pre;
+        font-size: 1rem;
+        line-height: 1.2;
+        margin: 20px 0;
+        color: #ff0;
         text-shadow: 0 0 5px orange;
     }
     #guessed {
@@ -82,17 +84,13 @@
     button#newGame:hover {
         background: #00ffffcc;
     }
-    @keyframes neon {
-        0%, 100% { text-shadow: 0 0 5px magenta, 0 0 15px cyan; }
-        50% { text-shadow: 0 0 20px yellow, 0 0 30px magenta; }
-    }
 </style>
 </head>
 <body>
 
 <h1>🎵 1980s Night Hangman 🎵</h1>
 <div id="wordDisplay"></div>
-<div id="lives"></div>
+<pre id="hangman"></pre>
 <div id="guessed"></div>
 <div id="message"></div>
 
@@ -113,9 +111,61 @@ let deck = [];
 let currentWord = "";
 let revealed = [];
 let guessedLetters = [];
-let lives = 7;
+let wrongGuesses = 0;
 
-// Shuffle & no-repeat logic
+// Hangman stages (7 steps: empty → full)
+const hangmanStages = [
+`  +---+
+  |   |
+      |
+      |
+      |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+      |
+      |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+  |   |
+      |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+ /|   |
+      |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+ /|\\  |
+      |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+ /|\\  |
+ /    |
+      |
+=========`,
+`  +---+
+  |   |
+  O   |
+ /|\\  |
+ / \\  |
+      |
+=========`];
+
+// Shuffle deck to avoid repeats
 function shuffleDeck() {
     deck = [...wordsMaster];
     for (let i = deck.length - 1; i > 0; i--) {
@@ -129,7 +179,7 @@ function newGame() {
     currentWord = deck.pop().toLowerCase();
     revealed = Array(currentWord.length).fill(false);
     guessedLetters = [];
-    lives = 7;
+    wrongGuesses = 0;
     document.getElementById("message").textContent = "";
     buildKeyboard();
     updateDisplay();
@@ -138,7 +188,7 @@ function newGame() {
 function updateDisplay() {
     const displayWord = currentWord.split("").map((ch, i) => revealed[i] ? ch.toUpperCase() : "_").join(" ");
     document.getElementById("wordDisplay").textContent = displayWord;
-    document.getElementById("lives").textContent = `Lives: ${lives} ❤️`.repeat(1);
+    document.getElementById("hangman").textContent = hangmanStages[wrongGuesses];
     document.getElementById("guessed").textContent = guessedLetters.length ? `Guessed: ${guessedLetters.join(", ").toUpperCase()}` : "";
 }
 
@@ -153,7 +203,7 @@ function guessLetter(letter) {
             if (ch === letter) revealed[i] = true;
         });
     } else {
-        lives--;
+        wrongGuesses++;
     }
 
     checkGameOver();
@@ -164,7 +214,7 @@ function checkGameOver() {
     if (revealed.every(v => v)) {
         document.getElementById("message").textContent = "🎉 Totally Tubular! You Won! 🎉";
         disableKeyboard();
-    } else if (lives <= 0) {
+    } else if (wrongGuesses >= hangmanStages.length - 1) {
         document.getElementById("message").textContent = `💀 Bogus! The word was: ${currentWord.toUpperCase()} 💀`;
         revealed = Array(currentWord.length).fill(true);
         disableKeyboard();
